@@ -1,0 +1,2 @@
+[10:27:24] Active Window: C:\Windows\System32\cmd.exe
+- python typing_logger.py
