@@ -1,0 +1,65 @@
+A browser port of [enp-toolkit-secure](https://github.com/CSSluckyyy095/enp-toolkit-secure),
+rebuilt as a Manifest V3 Chrome extension. All encryption happens **locally in your
+browser** — nothing is ever sent to a server.
+
+## What's the same as the desktop app
+
+- All 7 methods: AES-128 / AES-192 / AES-256 (CBC + PBKDF2-SHA256, 200k iterations),
+  ChaCha20, TripleDES, Fernet, RSA-Hybrid (RSA-2048-OAEP + AES-256)
+- Text mode and File mode
+- Password strength meter, dark GitHub-style theme, same layout and shortcuts
+  (Ctrl+E encrypt, Ctrl+D decrypt, Ctrl+S swap, Ctrl+L clear)
+- Fernet / RSA key vault, protected by a master password (PBKDF2, 150k iterations)
+
+## What had to change (browser ≠ desktop)
+
+A Chrome extension cannot run Python/Tkinter or touch your filesystem by path, so:
+
+| Desktop app | Extension |
+|---|---|
+| `fernet.key.enc`, `rsa_private.pem.enc` on disk | Stored in `chrome.storage.local` (still encrypted with your master password, same PBKDF2+AES wrap) |
+| File dialog picks any path | `<input type="file">` — you select a file, browser reads its bytes |
+| Saves output next to the input file | Downloads the encrypted/decrypted file via the browser's download flow |
+| Tkinter window | A full browser tab (click the toolbar icon to open it) |
+
+The actual cryptography is native **Web Crypto API** for AES, PBKDF2, and RSA-OAEP,
+plus a hand-written ChaCha20 (verified byte-for-byte against the RFC 8439 test
+vectors) and `crypto-js` for TripleDES, since browsers don't expose either natively.
+
+## Install locally (works right now, no store needed)
+
+1. Download/unzip this folder.
+2. Open `chrome://extensions` in Chrome.
+3. Turn on **Developer mode** (top-right toggle).
+4. Click **Load unpacked** → select the `extension` folder.
+5. Click the puzzle-piece icon in the toolbar → pin **ENP Tool Kit**.
+6. Click it any time to open the toolkit in a new tab.
+
+## Publishing it publicly (so anyone can add it from the Chrome Web Store)
+
+This part needs to happen from **your own** Google account — I can't do it for you,
+since it needs your identity and a payment method:
+
+1. Go to the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+2. Pay the one-time **$5 USD** registration fee (first time only).
+3. Click **New Item**, upload `enp-toolkit-extension.zip` (already built in this folder).
+4. Fill in the store listing: description, at least one 1280×800 screenshot of the
+   app tab, and a privacy statement (easy here — you can honestly say **no data
+   leaves the browser, nothing is collected**).
+5. Submit for review. Google's review for a simple, no-permissions-abuse extension
+   like this usually takes a few hours to a few days.
+6. Once approved, it's public — share the Chrome Web Store link, and it'll show
+   up in Chrome Web Store search too.
+
+## Security notes worth knowing before you publish it
+
+- This is a faithful, from-scratch reimplementation for portfolio/demo purposes —
+  it hasn't been through professional security review or a paid audit. Fine to
+  showcase; call it "for educational/demo use" in the listing, same as the
+  original repo already does.
+- `crypto-js` is vendored locally (no CDN, no remote code) so it passes Chrome
+  Web Store's Manifest V3 remote-code policy.
+- Because `chrome.storage.local` isn't a hardware-backed vault, treat the master
+  password vault the same way you'd treat the original app's `.enc` files —
+  don't rely on it for anything you can't afford to lose if your profile is
+  compromised.
